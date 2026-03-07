@@ -53,4 +53,4 @@ Puedes editar el archivo de configuración en `~/.config/yt-dlp/config` para aju
 - El navegador para las cookies.
 
 ---
-Creado por [Tu Nombre] - 2026
+Creado por **Francesc Fosas** - 2026

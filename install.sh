@@ -1,8 +1,8 @@
-#!/bin/bash
-
 # Script de instalación para yt-dlp Parallel Downloader
+# Autor: Francesc Fosas
 
 echo "🛠️  Iniciando instalador de yt-dlp Parallel Downloader..."
+echo "👤 Autor: Francesc Fosas"
 
 # Configurar rutas
 DEFAULT_DL_DIR="/mnt/Ext_2tb/DESCARGAS/yt-dlp"
