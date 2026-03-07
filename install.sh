@@ -5,8 +5,8 @@ echo "🛠️  Iniciando instalador de yt-dlp Parallel Downloader..."
 echo "👤 Autor: Francesc Fosas"
 
 # Configurar rutas
-DEFAULT_DL_DIR="/mnt/Ext_2tb/DESCARGAS/yt-dlp"
-read -p "📂 Introduce la ruta de descargas [$DEFAULT_DL_DIR]: " DL_DIR
+DEFAULT_DL_DIR="$HOME/Downloads/yt-dlp"
+read -p "📂 Introduce la ruta donde se guardarán los vídeos [$DEFAULT_DL_DIR]: " DL_DIR
 DL_DIR=${DL_DIR:-$DEFAULT_DL_DIR}
 
 mkdir -p "$DL_DIR"
@@ -16,7 +16,7 @@ touch "$LISTA_PATH"
 # 1. Instalar configuración de yt-dlp
 CONFIG_DIR="$HOME/.config/yt-dlp"
 mkdir -p "$CONFIG_DIR"
-cat yt-dlp.conf | sed "s|/mnt/Ext_2tb/DESCARGAS/yt-dlp|$DL_DIR|g" > "$CONFIG_DIR/config"
+cat yt-dlp.conf | sed "s|PLACEHOLDER_DIR|$DL_DIR|g" > "$CONFIG_DIR/config"
 echo "✅ Configuración instalada en $CONFIG_DIR/config"
 
 # 2. Inyectar función en .zshrc
