@@ -1,72 +1,67 @@
-# 🚀 yt-dlp Parallel Downloader
+# yt-dlp Parallel Downloader
 
-Un optimizador y gestor de descargas paralelas para `yt-dlp` diseñado para exprimir conexiones de alta velocidad (Fibra 600Mb+) y evitar bloqueos de servidores.
+Optimizador y gestor de descargas paralelas para `yt-dlp`, diseñado para maximizar el rendimiento en conexiones de alta velocidad y mitigar el riesgo de bloqueos por parte de los servidores.
 
-## ✨ Características
+## Características principales
 
-- **Descarga Paralela Mutitérminal:** Descarga múltiples vídeos a la vez (por defecto 3) usando `xargs`.
-- **Modo Turbo Fragmentado:** Cada vídeo descarga hasta 10 fragmentos simultáneos.
-- **Evasión de Bloqueos:** User-Agent dinámico, intervalos de espera aleatorios y uso de cookies del navegador.
-- **Robustez Total:** Ignora errores individuales y continúa con la lista, manteniendo un registro en `historial.txt` para no repetir trabajo.
-- **Modo Aleatorio:** Baraja la lista de descarga para permitir que múltiples terminales trabajen juntas sin conflictos.
+- **Paralelismo de procesos:** Gestión de múltiples descargas simultáneas mediante `xargs`.
+- **Segmentación de descarga:** Configuración de hasta 10 fragmentos concurrentes por archivo para saturar el ancho de banda.
+- **Evasión de sistemas anti-bot:** Implementación de User-Agent dinámico, intervalos de espera aleatorios y extracción de cookies de sesión.
+- **Gestión de errores:** Registro de descargas finalizadas en `historial.txt` e ignorancia de errores individuales para evitar la interrupción de la cola.
+- **Distribución de carga:** Aleatorización de la lista de descargas para permitir la ejecución concurrente desde múltiples terminales.
 
-## 🛠️ Requisitos
+## Requisitos del sistema
 
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- `zsh` (Recomendado) o `bash`
-- `xargs` y `shuf` (Coreutils de Linux)
-- Navegador Brave (para cookies)
+- `zsh` o `bash`
+- `xargs` y `shuf` (GNU Coreutils)
+- Navegador compatible para la extracción de cookies (Brave, Chrome, Firefox o Edge)
 
-## 🚀 Instalación Rápida
+## Instalación
 
-1. Clona este repositorio:
+1. Clonar el repositorio:
    ```bash
    git clone https://github.com/TU_USUARIO/yt-dlp-parallel.git
    cd yt-dlp-parallel
    ```
 
-2. Ejecuta el instalador:
+2. Ejecutar el script de instalación:
    ```bash
    chmod +x install.sh
    ./install.sh
    ```
 
-3. Recarga tu configuración:
+3. Recargar la configuración de la shell:
    ```bash
    source ~/.zshrc
    ```
 
-## 📖 Uso
+## Instrucciones de uso
 
-Simplemente añade tus enlaces al archivo de texto configurado durante la instalación y ejecuta:
+Añada los enlaces al archivo de texto especificado durante la instalación y ejecute el comando configurado:
 
 ```zsh
-descargar       # Lanza 3 descargas paralelas por defecto
-descargar 5     # Lanza 5 descargas paralelas
+descargar       # Ejecución con el límite predeterminado (ej. 3 descargas simultáneas)
+descargar 5     # Especificación manual a 5 descargas simultáneas
 ```
 
-## ⚙️ Configuración Personalizada
+## Análisis técnico y justificación
 
-Puedes editar el archivo de configuración en `~/.config/yt-dlp/config` para ajustar los parámetros.
+Este proyecto aplica criterios técnicos específicos para optimizar el flujo de trabajo:
 
-## 🧠 ¿Por qué esta configuración? (Deep Dive)
+### 1. Paralelismo multinivel
+- **Nivel de Proceso:** El uso de `xargs -P` permite gestionar varias descargas de archivos independientes. Esto es fundamental debido a las limitaciones de ancho de banda por conexión única impuestas por proveedores como OK.ru.
+- **Nivel de Fragmento:** Mediante `--concurrent-fragments`, se dividen los archivos en segmentos que se descargan en paralelo, optimizando el uso de conexiones de fibra óptica.
 
-Este proyecto no solo automatiza la descarga, sino que aplica ingeniería para maximizar el rendimiento:
+### 2. Mitigación de bloqueos
+- **Identidad de Navegador:** Se utiliza un User-Agent de un navegador moderno para evitar la identificación del tráfico como automatizado por Python.
+- **Intervalos de latencia:** La implementación de latencias aleatorias entre 5 y 15 segundos desestructura los patrones de acceso rítmico, reduciendo la probabilidad de detección por sistemas anti-bot.
+- **Aleatorización mediante shuf:** Permite que distintas instancias del script procesen diferentes partes de la lista simultáneamente sin entrar en conflicto.
 
-### 1. Paralelismo a dos niveles
-- **Nivel de Proceso (`xargs -P`):** Permite descargar varios archivos `.mp4` distintos al mismo tiempo. Esto es vital porque servidores como OK.ru limitan la velocidad de cada conexión individual.
-- **Nivel de Fragmento (`--concurrent-fragments 10`):** Dentro de un mismo vídeo, `yt-dlp` descarga 10 partes a la vez. Esto satura mejor el ancho de banda de conexiones de fibra óptica.
-
-### 2. Evasión de Bloqueos (Anti-Bot)
-- **User-Agent Real:** Evitamos que el servidor vea que la petición viene de un script básico de Python. Nos identificamos como un navegador Chrome actualizado.
-- **Tiempos de Espera Aleatorios:** Al añadir un retraso de entre 5 y 15 segundos entre descargas, rompemos el patrón rítmico que suelen buscar los sistemas anti-bot.
-- **Shuf (Randomize):** Al barajar la lista, permitimos que si usas varias terminales, no ataquen todas al mismo archivo, distribuyendo la carga de peticiones.
-
-### 3. Eficiencia de Datos
-- **Buffer de 1M:** Reducimos la frecuencia de escritura en disco, lo cual es más eficiente para la CPU y permite una entrada de datos más fluida en conexiones de alta velocidad.
-- **Historial de Descargas:** El archivo `historial.txt` es una base de datos local que evita que `yt-dlp` pierda tiempo siquiera conectando a vídeos que ya tienes descargados.
+### 3. Eficiencia en la persistencia de datos
+- **Optimización de Buffer:** El uso de un búfer de 1MB minimiza las operaciones de escritura en disco, mejorando la eficiencia en sistemas con alta tasa de transferencia.
+- **Archivo de archivo (Archive file):** El seguimiento mediante `historial.txt` previene el procesamiento redundante de enlaces ya descargados.
 
 ---
 
----
-Creado por **Francesc Fosas** - 2026
+Desarrollado por **Francesc Fosas** - 2026
