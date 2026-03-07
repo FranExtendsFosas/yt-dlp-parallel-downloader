@@ -38,7 +38,7 @@ Un optimizador y gestor de descargas paralelas para `yt-dlp` diseñado para expr
 
 ## 📖 Uso
 
-Simplemente añade tus enlaces al archivo `lista_de_descargas.txt` y ejecuta:
+Simplemente añade tus enlaces al archivo de texto configurado durante la instalación y ejecuta:
 
 ```zsh
 descargar       # Lanza 3 descargas paralelas por defecto

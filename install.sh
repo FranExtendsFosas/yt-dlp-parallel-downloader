@@ -11,7 +11,12 @@ read -p "📂 Introduce la ruta donde se guardarán los vídeos [$DEFAULT_DL_DIR
 DL_DIR=${DL_DIR:-$DEFAULT_DL_DIR}
 
 mkdir -p "$DL_DIR"
-LISTA_PATH="$DL_DIR/lista_de_descargas.txt"
+
+# Preguntar por el nombre del archivo de lista
+read -p "📄 ¿Cómo quieres que se llame el archivo de enlaces? [lista_de_descargas.txt]: " LIST_NAME
+LIST_NAME=${LIST_NAME:-lista_de_descargas.txt}
+
+LISTA_PATH="$DL_DIR/$LIST_NAME"
 touch "$LISTA_PATH"
 
 echo -e "\n--- Personalización de Descargas ---"
