@@ -1,67 +1,53 @@
 # yt-dlp Parallel Downloader
 
-Optimizador y gestor de descargas paralelas para `yt-dlp`, diseñado para maximizar el rendimiento en conexiones de alta velocidad y mitigar el riesgo de bloqueos por parte de los servidores.
+Una suite de automatización de alto rendimiento y robustez para `yt-dlp`, diseñada para el archivado masivo de medios. Este proyecto se centra en la fiabilidad, la mitigación de bloqueos por parte del servidor y la gestión automatizada de listas en entornos Linux.
 
-## Características principales
+## Arquitectura y Funcionalidades Principales
 
-- **Paralelismo de procesos:** Gestión de múltiples descargas simultáneas mediante `xargs`.
-- **Segmentación de descarga:** Configuración de hasta 10 fragmentos concurrentes por archivo para saturar el ancho de banda.
-- **Evasión de sistemas anti-bot:** Implementación de User-Agent dinámico, intervalos de espera aleatorios y extracción de cookies de sesión.
-- **Gestión de errores:** Registro de descargas finalizadas en `historial.txt` e ignorancia de errores individuales para evitar la interrupción de la cola.
-- **Distribución de carga:** Aleatorización de la lista de descargas para permitir la ejecución concurrente desde múltiples terminales.
+### 1. Sistema de Recuperación y Reintentos Inteligentes
+El motor implementa un bucle de reintentos de múltiples etapas (máximo 5 intentos) para gestionar interrupciones de red y limitaciones de tasa (rate-limiting) impuestas por el servidor. Al detectar fallos de conexión o errores de acceso (Exit Status 123), el script inicia un periodo de enfriamiento de seguridad:
+- **Retroceso Aleatorio (Randomized Backoff)**: Intervalos de espera de entre 30 y 70 segundos para emular el comportamiento humano y evitar bloqueos persistentes de IP.
+- **Cuenta Atrás en Tiempo Real**: Un temporizador visual persistente en la terminal informa sobre el tiempo exacto restante antes del siguiente intento de ejecución.
 
-## Requisitos del sistema
+### 2. Sincronización Automatizada de Listas
+La suite incluye un mecanismo de "sincronización segura" que cruza el archivo de historial de descargas con las listas de pendientes (`lista_video.txt` / `lista_audio.txt`) en tiempo real:
+- **Depuración Automática**: Las entradas descargadas con éxito se eliminan de los archivos de origen inmediatamente después de cada tanda o ante una interrupción.
+- **Gestión Atómica del Historial**: El archivo `historial.txt` se vacía tras la sincronización para evitar el crecimiento indefinido del archivo y permitir re-descargas si se añaden URLs manualmente de nuevo.
+- **Optimización para Almacenamiento Externo**: La lógica de limpieza está diseñada para evitar bloqueos de entrada/salida (I/O) en unidades externas, utilizando extracción de IDs en memoria.
 
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
-- `zsh` o `bash`
-- `xargs` y `shuf` (GNU Coreutils)
-- Navegador compatible para la extracción de cookies (Brave, Chrome, Firefox o Edge)
+### 3. Motor de Ejecución en Paralelo
+- **Paralelismo de Procesos**: Utiliza `xargs` para gestionar múltiples instancias concurrentes de `yt-dlp`.
+- **Concurrencia de Fragmentos**: Divide internamente cada archivo en hasta 10 fragmentos simultáneos para maximizar el uso del ancho de banda.
+- **Distribución de Carga**: Las listas de entrada se aleatorizan (`shuf`) antes de la ejecución, permitiendo que múltiples instancias de terminal trabajen sobre la misma lista sin conflictos de recursos.
 
-## Instalación
+### 4. Organización y Nomenclatura Avanzada
+- **Plantillas Inteligentes**: Elimina prefijos técnicos innecesarios y organiza los nombres de archivo basándose estrictamente en el título del contenido.
+- **Categorización Automática**: Detecta títulos de listas de reproducción (playlists) y genera automáticamente subdirectorios para mantener una biblioteca local estructurada.
+- **Integración de Metadatos**: Automatiza la incrustación de miniaturas, subtítulos (incluyendo generados automáticamente) y metadatos técnicos.
 
-1. Clonar el repositorio:
-   ```bash
-   git clone https://github.com/TU_USUARIO/yt-dlp-parallel.git
-   cd yt-dlp-parallel
-   ```
+## Referencia de Comandos
 
-2. Ejecutar el script de instalación:
-   ```bash
-   chmod +x install.sh
-   ./install.sh
-   ```
+La suite proporciona dos funciones especializadas integradas directamente en el entorno de la shell (`zsh`/`bash`):
 
-3. Recargar la configuración de la shell:
-   ```bash
-   source ~/.zshrc
-   ```
+### descargar-video [procesos]
+Descarga contenido en la máxima calidad de vídeo disponible basándose en las entradas de `lista_video.txt`.
+- Por defecto utiliza 3 procesos paralelos si no se especifica un argumento.
 
-## Instrucciones de uso
+### descargar-audio [procesos]
+Extrae el audio en formato MP3 (320kbps / VBR 0) de las entradas en `lista_audio.txt`.
+- Incluye post-procesamiento automatizado mediante `ffmpeg`.
 
-Añada los enlaces al archivo de texto especificado durante la instalación y ejecute el comando configurado:
+## Seguridad y Privacidad
+- **Operación Anónima**: La extracción de cookies está desactivada por defecto para proteger la cuenta principal del usuario de ser marcada por actividad automatizada.
+- **Suplantación de Identidad (User-Agent)**: Emula un entorno moderno de Chrome/Windows para evitar la detección básica de bots.
+- **Inhibición del Sistema**: Utiliza `systemd-inhibit` para prevenir que el sistema operativo entre en modo de suspensión o reposo durante las transferencias activas.
 
-```zsh
-descargar       # Ejecución con el límite predeterminado (ej. 3 descargas simultáneas)
-descargar 5     # Especificación manual a 5 descargas simultáneas
-```
+## Instalación y Configuración
 
-## Análisis técnico y justificación
-
-Este proyecto aplica criterios técnicos específicos para optimizar el flujo de trabajo:
-
-### 1. Paralelismo multinivel
-- **Nivel de Proceso:** El uso de `xargs -P` permite gestionar varias descargas de archivos independientes. Esto es fundamental debido a las limitaciones de ancho de banda por conexión única impuestas por proveedores como OK.ru.
-- **Nivel de Fragmento:** Mediante `--concurrent-fragments`, se dividen los archivos en segmentos que se descargan en paralelo, optimizando el uso de conexiones de fibra óptica.
-
-### 2. Mitigación de bloqueos
-- **Identidad de Navegador:** Se utiliza un User-Agent de un navegador moderno para evitar la identificación del tráfico como automatizado por Python.
-- **Intervalos de latencia:** La implementación de latencias aleatorias entre 5 y 15 segundos desestructura los patrones de acceso rítmico, reduciendo la probabilidad de detección por sistemas anti-bot.
-- **Aleatorización mediante shuf:** Permite que distintas instancias del script procesen diferentes partes de la lista simultáneamente sin entrar en conflicto.
-
-### 3. Eficiencia en la persistencia de datos
-- **Optimización de Buffer:** El uso de un búfer de 1MB minimiza las operaciones de escritura en disco, mejorando la eficiencia en sistemas con alta tasa de transferencia.
-- **Archivo de archivo (Archive file):** El seguimiento mediante `historial.txt` previene el procesamiento redundante de enlaces ya descargados.
+1. Clone el repositorio en su entorno local.
+2. Otorgue permisos de ejecución: `chmod +x install.sh`.
+3. Ejecute el instalador: `./install.sh`.
+4. Recargue su configuración de shell: `source ~/.zshrc`.
 
 ---
-
-Desarrollado por **Francesc Fosas** - 2026
+Desarrollado por **Francesc Fosas** | 2026

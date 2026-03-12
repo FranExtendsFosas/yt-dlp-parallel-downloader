@@ -1,0 +1,12 @@
+# Archivos de usuario (Evitar subir listas personales)
+lista_video.txt
+lista_audio.txt
+historial.txt
+
+# Archivos temporales de sistema
+*.tmp
+tmp.*
+.DS_Store
+
+# Logs
+*.log
