@@ -1,82 +1,131 @@
-# yt-dlp Parallel Downloader (Arquitectura de Alta Disponibilidad)
+# yt-dlp Parallel Downloader v2.0
 
-Una suite de automatización avanzada para `yt-dlp` diseñada para usuarios que requieren gestionar grandes volúmenes de descargas de forma robusta, rápida y automatizada. Este proyecto soluciona los problemas comunes del uso manual de `yt-dlp`, como los bloqueos de IP, la gestión manual de listas y la interrupción de procesos por fallos de red.
-
-## 🎓 Filosofía y Diseño Didáctico: ¿Por qué este proyecto?
-
-Este sistema no es un simple "envoltorio" para `yt-dlp`. Ha sido diseñado siguiendo principios de ingeniería para maximizar la eficiencia:
-
-1.  **¿Por qué Descargas Paralelas?**
-    Muchos servidores de vídeo limitan la velocidad por conexión individual. Al descargar varios archivos simultáneamente (Paralelismo de Proceso) y dividir cada archivo en fragmentos (Paralelismo de Fragmento), saturamos el ancho de banda disponible, reduciendo drásticamente el tiempo total de descarga.
-2.  **¿Por qué el "Retroceso Aleatorio" (Random Backoff)?**
-    Si un programa intenta reconectar cada 5 segundos exactos, los sistemas de seguridad de YouTube lo identifican como un bot. Nuestro sistema utiliza pausas aleatorias de entre 30 y 70 segundos, desestructurando el patrón y pareciendo un usuario humano que intenta refrescar la página tras un error.
-3.  **¿Por qué la Limpieza Atómica de Listas?**
-    Gestionar una lista de 200 vídeos manualmente es imposible si el programa falla a mitad. Este sistema "aprende" qué se ha bajado con éxito y lo elimina de tus archivos de texto al instante, manteniendo tus listas siempre actualizadas con el trabajo pendiente real.
+Una suite de automatización avanzada para `yt-dlp` con menú interactivo, descargas paralelas, reintento inteligente y gestión automática de listas de descarga.
 
 ---
 
-## 📂 Ecosistema de Archivos
+## 🆕 Novedades en v2.0
 
-Para que el sistema funcione, interactúa con cuatro archivos clave en tu directorio de descargas:
-
-### 1. `lista_video.txt` y `lista_audio.txt`
-Son tus "colas de trabajo". 
-- Simplemente pegas las URLs (una por línea) de los vídeos o listas de reproducción que deseas procesar.
-- El sistema leerá estas listas, las aleatorizará (para que si lanzas dos terminales, no bajen lo mismo) y empezará el trabajo.
-
-### 2. `historial.txt` (El Diario de Sesión)
-Este es un archivo técnico que `yt-dlp` rellena automáticamente cada vez que una descarga se completa con éxito.
-- **Función**: Sirve como puente de comunicación entre `yt-dlp` y nuestro script de limpieza.
-- **Ciclo de vida**: Tras una tanda de descargas, el script lee este archivo para saber qué borrar de las listas `.txt`. Una vez terminada la limpieza, el sistema **vacía** este historial para que esté listo y "fresco" para la siguiente sesión, evitando que el archivo crezca innecesariamente.
-
-### 3. `yt-dlp.conf` (El Cerebro)
-Contiene las reglas maestras: calidad máxima, formatos, incrustación de miniaturas y, sobre todo, la plantilla de nombres. Está configurado para que los archivos tengan nombres limpios y se organicen en carpetas si provienen de una lista de reproducción.
+- **Menú interactivo `descargar`**: interfaz unificada en terminal con 8 opciones.
+- **Apertura de listas en editor gráfico**: edita tus URLs desde una interfaz visual sin salir del flujo.
+- **Actualización automática de yt-dlp**: detecta el gestor de paquetes del sistema (Zypper/APT/pip/pipx).
+- **Estado de listas en tiempo real**: consulta cuántas URLs tienes pendientes.
+- **Descarga de "Ambos"**: lanza audio y vídeo en secuencia con control de cancelación.
+- **Creación automática de listas**: si borras los `.txt` por error, se recrean solos.
+- **Corrección de bugs**: limpieza al cancelar con Ctrl+C, variables locales protegidas, cancelación en cascada.
 
 ---
 
-## 🛠️ Comandos Disponibles
+## 🎓 Filosofía y Diseño
 
-Tras la instalación, dispondrás de dos comandos globales en tu terminal:
+Este sistema no es un simple envoltorio para `yt-dlp`. Sigue principios de ingeniería para maximizar la eficiencia y la robustez:
+
+1. **¿Por qué descargas paralelas?**
+   Muchos servidores limitan la velocidad por conexión. Al dividir cada archivo en fragmentos concurrentes, se satura el ancho de banda disponible, reduciendo drásticamente el tiempo total.
+
+2. **¿Por qué el "Retroceso Aleatorio" (Random Backoff)?**
+   Si el programa reintenta cada X segundos exactos, los sistemas anti-bot de YouTube lo detectan. El sistema usa pausas aleatorias entre 30 y 70 segundos, imitando el comportamiento humano.
+
+3. **¿Por qué la Limpieza Atómica de Listas?**
+   Gestionar manualmente 200 URLs es inviable si el proceso falla a mitad. El sistema elimina automáticamente las URLs completadas de los `.txt`, manteniendo la cola siempre actualizada.
+
+---
+
+## 📂 Archivos del sistema
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lista_video.txt` | Cola de URLs de vídeo (una por línea) |
+| `lista_audio.txt` | Cola de URLs de audio (una por línea) |
+| `historial.txt` | Registro interno de descargas completadas |
+| `~/.config/yt-dlp/config` | Configuración global de yt-dlp |
+
+---
+
+## 🛠️ Comandos disponibles
+
+### `descargar` — Menú interactivo *(nuevo en v2.0)*
+
+```
+=============================
+      MENÚ DE DESCARGAS
+=============================
+  1 - Descargar Audio (MP3)
+  2 - Descargar Vídeo (MP4/WebM)
+  3 - Descargar Ambos (Audio + Vídeo)
+  -----------------------------
+  4 - Abrir lista de Audio
+  5 - Abrir lista de Vídeo
+  6 - Ver estado de las listas
+  7 - Actualizar yt-dlp
+  8 - Salir
+=============================
+```
 
 ### `descargar-video [n]`
-- **Qué hace**: Inicia el motor para descargar las URLs de `lista_video.txt`.
-- **Parámetro `[n]`**: Opcional. Indica cuántos vídeos bajar a la vez. Ej: `descargar-video 5` bajará 5 vídeos simultáneamente. Si no pones nada, usará 3 por defecto.
-- **Uso ideal**: Series, tutoriales o vídeos que quieras conservar en máxima calidad.
+Inicia la descarga de URLs de `lista_video.txt`. El parámetro opcional `n` define el número de conexiones simultáneas por archivo (por defecto 3).
 
 ### `descargar-audio [n]`
-- **Qué hace**: Procesa `lista_audio.txt`. Convierte automáticamente cada vídeo a MP3 de alta fidelidad (320kbps).
-- **Parámetro `[n]`**: Igual que el anterior, define el nivel de paralelismo.
-- **Uso ideal**: Podcasts, listas de reproducción musicales o bandas sonoras.
+Procesa `lista_audio.txt` convirtiendo cada vídeo a MP3 de máxima calidad. Mismo parámetro opcional.
 
 ---
 
-## 🔄 El Ciclo de Vida de una Descarga
+## 🔄 Ciclo de vida de una descarga
 
-Cuando ejecutas un comando, el sistema sigue este flujo de trabajo:
-
-1.  **Barajado (Shuffle)**: Desordena tu lista para distribuir la carga.
-2.  **Inhibición**: Bloquea el estado de reposo del sistema operativo para evitar que el PC se duerma a mitad de descarga.
-3.  **Descarga en Paralelo**: Lanza las instancias de `yt-dlp` configuradas.
-4.  **Detección de Interrupción**: 
-    - Si todo va bien, el ciclo termina.
-    - Si ocurre un error de red o bloqueo (`Exit 123`), el sistema entra en modo recuperación.
-5.  **Sincronización de Seguridad**: Limpia las listas `.txt` con lo que se haya logrado bajar hasta ese momento.
-6.  **Cuenta Atrás**: Muestra un temporizador en tiempo real en la terminal esperando el tiempo aleatorio de seguridad.
-7.  **Reintento**: Reinicia el proceso automáticamente (hasta un máximo de 5 intentos).
-
----
-
-## 🔐 Seguridad y Privacidad Corporativa
-
-- **Navegación Anónima**: De forma predeterminada, el sistema no comparte tus cookies de navegación. Esto previene que tu cuenta personal de Google pueda ser vinculada a descargas masivas o automatizadas.
-- **Protección de Identidad**: El sistema se identifica ante los servidores con un identificador de navegador moderno (User-Agent) para reducir al mínimo la posibilidad de ser bloqueado como tráfico sospechoso.
+```
+URL en lista.txt
+     ↓
+  Barajado (evita que dos sesiones bajen lo mismo)
+     ↓
+  systemd-inhibit (evita que el PC se duerma)
+     ↓
+  yt-dlp en paralelo
+     ↓
+  ¿Éxito? → Limpieza de lista → Fin
+  ¿Ctrl+C? → Limpieza de lista → Fin
+  ¿Error de red? → Limpieza parcial → Cuenta atrás → Reintento (hasta 5x)
+```
 
 ---
 
-## ⚡ Instalación Rápida
+## 🔐 Seguridad y Privacidad
 
-1.  Otorga permisos: `chmod +x install.sh`
-2.  Ejecuta: `./install.sh`
-3.  Carga el sistema: `source ~/.zshrc`
+- **Navegación anónima por defecto**: no se comparten cookies del navegador, protegiendo la cuenta de Google.
+- **User-Agent moderno**: se identifica como un navegador real para reducir bloqueos.
+- **OpenSUSE compatible**: la actualización automática detecta Zypper y lo usa correctamente, respetando las restricciones de Python (PEP 668).
+
+---
+
+## ⚡ Instalación
+
+```bash
+chmod +x install.sh
+./install.sh
+source ~/.zshrc
+```
+
+El instalador te preguntará:
+- La **ruta** donde quieres guardar las descargas (por defecto `~/Downloads/yt-dlp`)
+- El número de **conexiones simultáneas** por defecto (por defecto 3)
+
+Y se encargará de:
+1. Copiar y configurar `yt-dlp.conf` en `~/.config/yt-dlp/config`
+2. Añadir todas las funciones a tu `~/.zshrc`
+3. Crear los archivos de lista vacíos
+
+---
+
+## 📦 Compatibilidad
+
+| Sistema | Estado |
+|---------|--------|
+| openSUSE Tumbleweed | ✅ Probado |
+| Ubuntu / Debian / Linux Mint | ✅ Compatible (APT) |
+| Arch Linux | ⚠️ Compatible (actualización manual) |
+| macOS (Homebrew) | ⚠️ Compatible (actualización manual) |
+
+Requiere: `zsh`, `yt-dlp`, `systemd-inhibit`, `xdg-open`, `ffmpeg`
+
+---
 
 Desarrollado por **Francesc Fosas** | 2026
